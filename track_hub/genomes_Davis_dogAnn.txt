@@ -1,0 +1,2 @@
+genome canFam3
+trackDb canFam3/trackDb_Davis_dogAnn.txt

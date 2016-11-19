@@ -1,0 +1,5 @@
+hub Davis_dogAnn
+shortLabel Davis_dogAnn
+longLabel Annotations of canFam3 assembly
+genomesFile genomes_Davis_dogAnn.txt
+email drtamermansour@gmail.com
