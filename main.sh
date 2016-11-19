@@ -48,7 +48,9 @@ cat blastHg18KG.txt | cut -f2-22 | blastHg18KG.psl
 wget http://hgdownload.soe.ucsc.edu/goldenPath/canFam2/liftOver/canFam2ToCanFam3.over.chain.gz
 gunzip canFam2ToCanFam3.over.chain.gz
 $script_path/UCSC_kent_commands/liftOver blastHg18KG.psl canFam2ToCanFam3.over.chain  blastHg18KG_mapped.psl unMapped -pslT
-
+#wget http://hgdownload.soe.ucsc.edu/goldenPath/canFam3/liftOver/canFam3ToCanFam2.over.chain.gz
+#gunzip canFam3ToCanFam2.over.chain.gz
+#$script_path/UCSC_kent_commands/liftOver blastHg18KG.psl canFam3ToCanFam2.over.chain  blastHg18KG_mapped.psl unMapped -pslT
 #############################################################
 ## variant annotation
 sed 's/>chr/>/' $genome_dir/canFam3.fa > $genome_dir/canFam3_ens.fa
@@ -78,7 +80,7 @@ chromSizes=$genome_dir/$UCSCgenome.chrom.sizes
 ## fetch the UCSC database to get the chromosome sizes
 bash ${script_path}/calcChromSizes.sh $UCSCgenome $chromSizes
 ## Create the basic directory structure of the track hubs
-mkdir -p $track_hub/$UCSCgenome/BigBed
+mkdir -p $track_hub/$UCSCgenome/{BigBed,BigPsl}
 ###########################################################################################
 ## Track for public assemblies
 mkdir -p $pubAssemblies/NCBI && cd $pubAssemblies/NCBI
@@ -132,6 +134,32 @@ tiss_assemblies=$horse_trans/emptyTemp.txt
 bash $script_path/edit_trackDb.sh $current_libs $current_tissues $trackDb $lib_assemblies $tiss_assemblies
 
 ######################
+pubAssemblies_psl=$work_dir/pubAssemblies_psl
 mkdir -p $pubAssemblies_psl/humanPtn && cd $pubAssemblies_psl/humanPtn
 cp $work_dir/refResources/blastHg18KG_mapped.psl .
+
+cat blastHg18KG_mapped.psl | $script_path/mypslToBigPsl | sort -k1,1 -k2,2n > blastHg18KG_mapped.bigPsl
+#cat blastHg18KG_mapped.psl | awk -F "\t" -v OFS='\t' '{split($9,a,""); split($21,b,","); print $14,$16,$17,$10,1000,a[2],$16,$17,0,$18,$19,$21,$12,$13,a[1],$11,$20,"","",$15,$1,$2,$3,$4;}' | sort -k1,1 -k2,2n > blastHg18KG_mapped.bigPsl
+#$script_path/UCSC_kent_commands/pslToBigPsl blastHg18KG_mapped.psl stdout | sort -k1,1 -k2,2n > blastHg18KG_mapped.bigPsl
+$script_path/UCSC_kent_commands/bedToBigBed -type=bed12+12 -tab -as=bigPsl.as blastHg18KG_mapped.bigPsl "$genome_dir/$UCSCgenome.chrom.sizes" blastHg18KG_mapped.BigBed
+identifier=$(echo "humanPtn" | sed 's/\//_/g' | sed 's/_output//g')
+cp blastHg18KG_mapped.BigBed $track_hub/$UCSCgenome/BigPsl/${identifier}.BigBed
+
+## create non-composite entry of the assembly
+priority=1
+t="humanPtn"
+assembly="humanPtn"
+filename=$(echo $assembly | sed 's/\//_/g' | sed 's/_output//g')
+echo "track $t" >> $trackDb
+echo "bigDataUrl BigPsl/$filename.BigBed" >> $trackDb
+echo "shortLabel $t" >> $trackDb
+echo "longLabel $assembly" >> $trackDb
+echo "type bigPsl" >> $trackDb
+echo "colorByStrand 255,0,0 0,0,255" >> $trackDb
+echo "visibility dense" >> $trackDb
+echo "priority $priority" >> $trackDb
+echo "html $filename" >> $trackDb
+echo " " >> $trackDb
+#echo $assembly >> $current_libs
+
 

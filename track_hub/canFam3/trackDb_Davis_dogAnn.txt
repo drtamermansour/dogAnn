@@ -18,3 +18,13 @@ visibility dense
 priority 2
 html NCBI
  
+track humanPtn
+bigDataUrl BigPsl/humanPtn.BigBed
+shortLabel humanPtn
+longLabel humanPtn
+type bigPsl
+colorByStrand 255,0,0 0,0,255
+visibility dense
+priority 1
+html humanPtn
+ 

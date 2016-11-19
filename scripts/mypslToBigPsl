@@ -1,0 +1,32 @@
+#!/usr/bin/awk -f
+#
+# Convert psl file to a bigPsl file (on stdout) #
+BEGIN {
+FS="\t";
+OFS="\t"; }
+{
+chrom=$14
+start=$16
+end=$17
+name=$10
+delete st
+split($9,st,"");
+blkCnt=$18
+blkSizes=$19
+delete psl_blkStarts
+split($21,psl_blkStarts,",");
+blkStarts=""
+for (i = 1; i <= blkCnt; i++) {
+blkStarts = blkStarts (psl_blkStarts[i]-psl_blkStarts[1]) ","; }
+oStart=$12
+oEnd=$13
+oSize=$11
+oBlkStarts=$20
+size=$15
+matches=$1
+misMatch=$2
+repMatch=$3
+nCount=$4
+print chrom, start, end, name, 1000, st[2], start, end, 0, blkCnt, blkSizes, blkStarts, oStart, oEnd, st[1], oSize, oBlkStarts, "", "", size, matches, misMatch, repMatch, nCount
+}
+
