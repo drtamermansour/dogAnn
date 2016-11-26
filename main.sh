@@ -8,8 +8,8 @@ pubAssemblies=$work_dir/pubAssemblies
 
 dogSeq=$"/mnt/ls15/scratch/users/mansourt/Tamer/dogSeq"
 genome_dir=$"/mnt/ls15/scratch/users/mansourt/Tamer/dogSeq/refGenome"
-
-cd $work_dir/refResources
+#######################################################################
+cd $refRes
 
 ## protein coding track (broad)
 wget https://www.broadinstitute.org/ftp/pub/vgb/dog/trackHub/canFam3/annotation/canis_familiaris.protein_coding.bb
@@ -22,7 +22,8 @@ $script_path/UCSC_kent_commands/bedToGenePred canis_familiaris.protein_coding.be
 #ucscTable=$"refGene.txt.gz"
 #zcat $ucscTable | cut -f2-16 | $script_path/UCSC_kent_commands/genePredToGtf file stdin refGene.gtf
 #zcat $ucscTable | cut -f2-16 | $script_path/genePredToBed > refGene.bed
-#refGenes from NCBI
+
+##refGenes from NCBI
 wget ftp://ftp.ncbi.nih.gov/genomes/Canis_lupus_familiaris/GFF/ref_CanFam3.1_top_level.gff3.gz
 gunzip ref_CanFam3.1_top_level.gff3.gz
 #  recognize RefSeq transcript changed compared to genomic sequence
@@ -30,12 +31,16 @@ gunzip ref_CanFam3.1_top_level.gff3.gz
 grep -v "GeneID:486591" ref_CanFam3.1_top_level.gff3 > ref_CanFam3.1_top_level_edit.gff3
 $script_path/UCSC_kent_commands/gff3ToGenePred -useName ref_CanFam3.1_top_level_edit.gff3 ref_CanFam3.1_top_level.gpred
 #$script_path/UCSC_kent_commands/genePredToGtf -utr file ref_CanFam3.1_top_level.gpred ref_CanFam3.1_top_level.gtf
-mkdir ncbi && cd ncbi
+mkdir $refRes/ncbi && cd $refRes/ncbi
 ## map the genomes: create liftover files to allow mapping of NCBI annotation to UCSC tracks 
 bash $script_path/mapGenome.sh $genome          ## ends by creating ncbi/NCBItoUCSC_map.sorted.chain
-cd ../
-$script_path/UCSC_kent_commands/liftOver ref_CanFam3.1_top_level.gpred ncbi/NCBItoUCSC_map.sorted.chain ref_CanFam3.1_top_level_mapped.gpred unMapped -genePred
+cd $refRes/
+$script_path/UCSC_kent_commands/liftOver ref_CanFam3.1_top_level.gpred $refRes/ncbi/NCBItoUCSC_map.sorted.chain ref_CanFam3.1_top_level_mapped.gpred unMapped -genePred
 $script_path/UCSC_kent_commands/genePredToGtf file ref_CanFam3.1_top_level_mapped.gpred ref_CanFam3.1_top_level_mapped.gtf
+
+cd $refRes
+grep -v "Curated Genomic" ref_CanFam3.1_top_level_edit.gff3 > ref_CanFam3.1_top_level_edit2.gff3
+$script_path/UCSC_kent_commands/liftOver ref_CanFam3.1_top_level_edit2.gff3 $refRes/ncbi/NCBItoUCSC_map.sorted.chain ref_CanFam3.1_top_level_mapped.gff3 unMapped2 -gff
 
 ## ensembl gene track
 wget ftp://ftp.ensembl.org/pub/release-86/gtf/canis_familiaris/Canis_familiaris.CanFam3.1.86.gtf.gz
@@ -51,28 +56,6 @@ $script_path/UCSC_kent_commands/liftOver blastHg18KG.psl canFam2ToCanFam3.over.c
 #wget http://hgdownload.soe.ucsc.edu/goldenPath/canFam3/liftOver/canFam3ToCanFam2.over.chain.gz
 #gunzip canFam3ToCanFam2.over.chain.gz
 #$script_path/UCSC_kent_commands/liftOver blastHg18KG.psl canFam3ToCanFam2.over.chain  blastHg18KG_mapped.psl unMapped -pslT
-#############################################################
-## variant annotation
-sed 's/>chr/>/' $genome_dir/canFam3.fa > $genome_dir/canFam3_ens.fa
-
-#gtf2vep.pl -i Canis_familiaris.CanFam3.1.86.gtf -f $genome_dir/canFam3_ens.fa -d 85 -s canis_familiaris_Ensembl
-
-#egrep "transcript_id \"NM_|transcript_id \"XM_" ref_CanFam3.1_top_level_mapped.gtf | awk -F "\t" -v OFS='\t' '{ print $0" gene_source \"NCBI\"; gene_biotype \"protein_coding\"; transcript_source \"NCBI\"; transcript_biotype \"protein_coding\";" }' > ref_CanFam3.1_coding_mapped_forVEP.gtf 
-#while read line;do
-# echo "$line" | awk '{if($3=="start_codon" || $3=="stop_codon")print;}' | sed 's/exon_id ".*"; gene_name/gene_name/'; 
-# echo "$line" | awk '{if($3!="start_codon" && $3!="stop_codon")print;}' 
-#done < ref_CanFam3.1_coding_mapped_forVEP.gtf > ref_CanFam3.1_coding_mapped_forVEP2.gtf
-#sed 's/^chr//' ref_CanFam3.1_coding_mapped_forVEP2.gtf > ref_CanFam3.1_coding_mapped_forVEP3.gtf
-#gtf2vep.pl -i ref_CanFam3.1_coding_mapped_forVEP3.gtf -f $genome_dir/canFam3_ens.fa -d 85 -s canis_familiaris_codingNCBI --no_transcripts --verbose &> gtf2vep_ncbi.log
-
-#cat canis_familiaris.protein_coding.gtf | awk -F "\t" -v OFS='\t' '{ print $0" gene_source \"Broad\"; gene_biotype \"protein_coding\"; transcript_source \"Broad\"; transcript_biotype \"protein_coding\";" }' > canis_familiaris.protein_coding_forVEP.gtf
-#while read line;do
-# echo "$line" | awk -F "\t" -v OFS='\t' '{if($3=="start_codon" || $3=="stop_codon")print;}' | sed 's/exon_id ".*"; gene_name/gene_name/';
-# echo "$line" | awk -F "\t" -v OFS='\t' '{if($3!="start_codon" && $3!="stop_codon")print;}'
-#done < canis_familiaris.protein_coding_forVEP.gtf > canis_familiaris.protein_coding_forVEP2.gtf
-#sed 's/^chr//' canis_familiaris.protein_coding_forVEP2.gtf > canis_familiaris.protein_coding_forVEP3.gtf
-#gtf2vep.pl -i canis_familiaris.protein_coding_forVEP3.gtf -f $genome_dir/canFam3_ens.fa -d 85 -s canis_familiaris_Broad --no_transcripts --verbose &> gtf2vep_broad.log
-
 ###########################################################################################
 ### Initiate the basic structure for horse track hubs
 UCSCgenome=canFam3
@@ -162,4 +145,66 @@ echo "html $filename" >> $trackDb
 echo " " >> $trackDb
 #echo $assembly >> $current_libs
 
+#############################################################
+## variant annotation
+#module load annovar/20140409
+#annotate_variation.pl -buildver canFam3 --downdb --webfrom ucsc refGene dogdb/ ## failed
 
+## http://www.ensembl.org/info/docs/tools/vep/script/vep_tutorial.html
+wget https://github.com/Ensembl/ensembl-tools/archive/release/85.zip
+gunzip 85.gz
+cd ~/ensembl-tools-release-85/scripts/variant_effect_predictor/
+perl INSTALL.pl
+## install local cache using VEP-INSTALL.pl (http://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#offline)
+## for API installation say "Yes". but you can skip to download cache only
+## for cache files choose 12 : a merged file of RefSeq and Ensembl transcripts. Remember to use --merged when running the VEP with this cache
+## for FASTA files choose 9: Canis_familiaris.CanFam3.1.dna.toplevel.fa.gz. The FASTA file should be automatically detected by the VEP when using --cache or --offline. If it is not, use "--fasta /mnt/home/mansourt/.vep/canis_familiaris/81_CanFam3.1/Canis_familiaris.CanFam3.1.dna.toplevel.fa"
+## for plugins choose 0 for all
+#variant_effect_predictor.pl -i GenotypeGVCFs_output_max50.raw_SNPs.vcf --cache --offline -species canis_familiaris --merged
+
+## alterantive approach by installing the cache manually
+mkdir $HOME/.vep && cd $HOME/.vep
+#wget ftp://ftp.ensembl.org/pub/current_variation/VEP/canis_familiaris_merged_vep_86_CanFam3.1.tar.gz
+#tar xfz canis_familiaris_merged_vep_86_CanFam3.1.tar.gz 
+wget ftp://ftp.ensembl.org/pub/current_variation/VEP/canis_familiaris_vep_86_CanFam3.1.tar.gz
+tar xfz canis_familiaris_vep_86_CanFam3.1.tar.gz
+rm canis_familiaris_vep_86_CanFam3.1.tar.gz
+
+## create additional local databases
+cd $refRes
+sed 's/>chr/>/' $genome_dir/canFam3.fa > $genome_dir/canFam3_ens.fa
+module load VEP/85
+## Ensembl
+#wget ftp://ftp.ensembl.org/pub/release-86/gff3/canis_familiaris/Canis_familiaris.CanFam3.1.86.gff3.gz
+#gunzip Canis_familiaris.CanFam3.1.86.gff3.gz
+#gtf2vep.pl -i Canis_familiaris.CanFam3.1.86.gff3 -f $genome_dir/canFam3_ens.fa -d 85 -s canFam.Ensemblgff --verbose &> gtf2vep_all_ensGFF.log
+gtf2vep.pl -i Canis_familiaris.CanFam3.1.86.gtf -f $genome_dir/canFam3_ens.fa -d 85 -s canFam.Ensembl --verbose &> gtf2vep_all_ens.log
+
+## NCBI
+grep -v "Curated Genomic" ref_CanFam3.1_top_level_edit.gff3 > ref_CanFam3.1_top_level_edit2.gff3
+$script_path/UCSC_kent_commands/liftOver ref_CanFam3.1_top_level_edit2.gff3 $refRes/ncbi/NCBItoUCSC_map.sorted.chain ref_CanFam3.1_top_level_mapped.gff3 unMapped2 -gff
+sed 's/^chr//' ref_CanFam3.1_top_level_mapped.gff3 > ref_CanFam3.1_top_level_mapped_VEP.gff3
+gtf2vep.pl -i ref_CanFam3.1_top_level_mapped_VEP.gff3 -f $genome_dir/canFam3_ens.fa -d 85 -s canFam.NCBIgff --verbose &> gtf2vep_all_ncbiGFF.log
+#egrep "transcript_id \"NM_|transcript_id \"XM_" ref_CanFam3.1_top_level_mapped.gtf | awk -F "\t" -v OFS='\t' '{ print $0" gene_source \"NCBI\"; gene_biotype \"protein_coding\"; $
+#while read line;do
+# echo "$line" | awk '{if($3=="start_codon" || $3=="stop_codon")print;}' | sed 's/exon_id ".*"; gene_name/gene_name/';
+# echo "$line" | awk '{if($3!="start_codon" && $3!="stop_codon")print;}'
+#done < ref_CanFam3.1_coding_mapped_forVEP.gtf > ref_CanFam3.1_coding_mapped_forVEP2.gtf
+#sed 's/^chr//' ref_CanFam3.1_coding_mapped_forVEP2.gtf > ref_CanFam3.1_coding_mapped_forVEP3.gtf
+#gtf2vep.pl -i ref_CanFam3.1_coding_mapped_forVEP3.gtf -f $genome_dir/canFam3_ens.fa -d 85 -s canis_familiaris_codingNCBI --no_transcripts --verbose &> gtf2vep_ncbi.log
+
+## Broad
+#cat canis_familiaris.protein_coding.gtf | awk -F "\t" -v OFS='\t' '{ print $0" gene_source \"Broad\"; gene_biotype \"protein_coding\"; transcript_source \"Broad\"; transcript_bi$
+#while read line;do
+# echo "$line" | awk -F "\t" -v OFS='\t' '{if($3=="start_codon" || $3=="stop_codon")print;}' | sed 's/exon_id ".*"; gene_name/gene_name/';
+# echo "$line" | awk -F "\t" -v OFS='\t' '{if($3!="start_codon" && $3!="stop_codon")print;}'
+#done < canis_familiaris.protein_coding_forVEP.gtf > canis_familiaris.protein_coding_forVEP2.gtf
+#sed 's/^chr//' canis_familiaris.protein_coding_forVEP2.gtf > canis_familiaris.protein_coding_forVEP3.gtf
+#gtf2vep.pl -i canis_familiaris.protein_coding_forVEP3.gtf -f $genome_dir/canFam3_ens.fa -d 85 -s canis_familiaris_Broad --no_transcripts --verbose &> gtf2vep_broad.log
+
+### Notes in VEP:
+## When you use annotation file to generate local cache, then try to annotate a variant out side the annotated boundries, the variant_effect_predictor.pl will give you a warning says for example: "WARNING: Could not find cache for 3:27000001-28000000; correct assembly used?"
+## If the annotation file is missing a chromosome, the variant_effect_predictor.pl will give you a warning says for example: "WARNING: Chromosome X not found in cache on line 3773"
+## When using GFF to generate caches, gtf2vep.pl will ignore: exons from genes without transcripts, cDNA_match, match, region  && wil generate warnings for: exons or CDS without transcripts
+## when using GTF to generate caches, gtf2vep.pl will generate warnings for: start_codon, stop_codon, five_prime_utr, three_prime_utr,
+## when using GTF to generate caches, some formats induce gtf2vep.pl to connect to the Ensembl MySQL server (This is my problem with NCBI gtf and it happens with one feature in the whole Ensembl gtf
