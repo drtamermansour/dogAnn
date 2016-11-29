@@ -70,8 +70,7 @@ mkdir -p $pubAssemblies/NCBI && cd $pubAssemblies/NCBI
 cp $work_dir/refResources/ref_CanFam3.1_top_level_mapped.gtf ncbiAnn.gtf
 
 mkdir -p $pubAssemblies/Ensembl86 && cd $pubAssemblies/Ensembl86
-grep -v "^#" $work_dir/refResources/Canis_familiaris.CanFam3.1.86.gtf | grep -v "^MT" | awk -F "\t" -v OFS='\t' '{ if(length($1)>2){split($1,a,"."); print "chrUn_"a[1],$2,$3,$4,$5,$6,$7,$8,$9;} else {print "chr"$0;} }' > ens86Ann.gtf
-
+#grep -v "^#" $work_dir/refResources/Canis_familiaris.CanFam3.1.86.gtf | grep -v "^MT" | awk -F "\t" -v OFS='\t' '{ if(length($1)>2){split($1,a,"."); print "chrUn_"a[1],$2,$3,$4,$5,$6,$7,$8,$9;} else {print "chr"$0;} }' > ens86Ann.gtf
 cp $work_dir/refResources/Canis_familiaris.CanFam3.1.86.gtf ens86Ann.gtf
 
 ## create list of public assemblies
