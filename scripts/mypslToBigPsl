@@ -27,6 +27,6 @@ matches=$1
 misMatch=$2
 repMatch=$3
 nCount=$4
-print chrom, start, end, name, 1000, st[1], start, end, 0, blkCnt, blkSizes, blkStarts, oStart, oEnd, st[2], oSize, oBlkStarts, "", "", size, matches, misMatch, repMatch, nCount
+print chrom, start, end, name, 1000, st[2], start, end, 0, blkCnt, blkSizes, blkStarts, oStart, oEnd, st[1], oSize, oBlkStarts, "", "", size, matches, misMatch, repMatch, nCount
 }
 

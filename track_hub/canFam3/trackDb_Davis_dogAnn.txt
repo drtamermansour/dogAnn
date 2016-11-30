@@ -28,3 +28,13 @@ visibility dense
 priority 1
 html humanPtn
  
+track humanPtn2
+bigDataUrl BigBed/humanPtn2.BigBed
+shortLabel humanPtn2
+longLabel humanPtn2
+type bigBed 12
+colorByStrand 255,0,0 0,0,255
+visibility dense
+priority 1
+html humanPtn2
+ 

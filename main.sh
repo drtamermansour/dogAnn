@@ -53,6 +53,10 @@ cat blastHg18KG.txt | cut -f2-22 | blastHg18KG.psl
 wget http://hgdownload.soe.ucsc.edu/goldenPath/canFam2/liftOver/canFam2ToCanFam3.over.chain.gz
 gunzip canFam2ToCanFam3.over.chain.gz
 $script_path/UCSC_kent_commands/liftOver blastHg18KG.psl canFam2ToCanFam3.over.chain  blastHg18KG_mapped.psl unMapped -pslT
+
+$script_path/UCSC_kent_commands/pslToBed blastHg18KG.psl blastHg18KG.bed
+$script_path/UCSC_kent_commands/liftOver blastHg18KG.bed canFam2ToCanFam3.over.chain  blastHg18KG_mapped.bed unMapped_bed
+
 #wget http://hgdownload.soe.ucsc.edu/goldenPath/canFam3/liftOver/canFam3ToCanFam2.over.chain.gz
 #gunzip canFam3ToCanFam2.over.chain.gz
 #$script_path/UCSC_kent_commands/liftOver blastHg18KG.psl canFam3ToCanFam2.over.chain  blastHg18KG_mapped.psl unMapped -pslT
@@ -78,7 +82,6 @@ rm -f $pubAssemblies/public_assemblies.txt
 for tissue in $pubAssemblies/*; do
   echo "$pubAssemblies" "${tissue#$pubAssemblies/}" >> $pubAssemblies/public_assemblies.txt;
 done
-
 ####################
 ## convert the gtf files into BigBed files & copy the BigBed files to the track hub directory
 update=0    ## 0 means do not update Bigbed files & 1 means update
@@ -115,11 +118,35 @@ lib_assemblies=$pubAssemblies/public_assemblies.txt
 tiss_assemblies=$horse_trans/emptyTemp.txt
 bash $script_path/edit_trackDb.sh $current_libs $current_tissues $trackDb $lib_assemblies $tiss_assemblies
 
+
+mkdir -p $pubAssemblies_psl/humanPtn2 && cd $pubAssemblies_psl/humanPtn2
+cp $work_dir/refResources/blastHg18KG_mapped.bed .
+sort -k1,1 -k2,2n blastHg18KG_mapped.bed > blastHg18KG_mapped_sorted.bed
+$script_path/UCSC_kent_commands/bedToBigBed blastHg18KG_mapped_sorted.bed ""$genome_dir/$UCSCgenome.chrom.sizes"" blastHg18KG_mapped.BigBed
+identifier=$(echo "humanPtn2" | sed 's/\//_/g' | sed 's/_output//g')
+cp blastHg18KG_mapped.BigBed $track_hub/$UCSCgenome/BigBed/${identifier}.BigBed
+
+## create non-composite entry of the assembly
+priority=1
+t="humanPtn2"
+assembly="humanPtn2"
+filename=$(echo $assembly | sed 's/\//_/g' | sed 's/_output//g')
+echo "track $t" >> $trackDb
+echo "bigDataUrl BigBed/$filename.BigBed" >> $trackDb
+echo "shortLabel $t" >> $trackDb
+echo "longLabel $assembly" >> $trackDb
+echo "type bigBed 12" >> $trackDb
+echo "colorByStrand 255,0,0 0,0,255" >> $trackDb
+echo "visibility dense" >> $trackDb
+echo "priority $priority" >> $trackDb
+echo "html $filename" >> $trackDb
+echo " " >> $trackDb
+#echo $assembly >> $current_libs
+
 ######################
 pubAssemblies_psl=$work_dir/pubAssemblies_psl
 mkdir -p $pubAssemblies_psl/humanPtn && cd $pubAssemblies_psl/humanPtn
 cp $work_dir/refResources/blastHg18KG_mapped.psl .
-
 cat blastHg18KG_mapped.psl | $script_path/mypslToBigPsl | sort -k1,1 -k2,2n > blastHg18KG_mapped.bigPsl
 #cat blastHg18KG_mapped.psl | awk -F "\t" -v OFS='\t' '{split($9,a,""); split($21,b,","); print $14,$16,$17,$10,1000,a[2],$16,$17,0,$18,$19,$21,$12,$13,a[1],$11,$20,"","",$15,$1,$2,$3,$4;}' | sort -k1,1 -k2,2n > blastHg18KG_mapped.bigPsl
 #$script_path/UCSC_kent_commands/pslToBigPsl blastHg18KG_mapped.psl stdout | sort -k1,1 -k2,2n > blastHg18KG_mapped.bigPsl
@@ -143,6 +170,26 @@ echo "priority $priority" >> $trackDb
 echo "html $filename" >> $trackDb
 echo " " >> $trackDb
 #echo $assembly >> $current_libs
+#######################################
+## create the tBlastn track from scratch
+wget ftp://ftp.ncbi.nih.gov/genomes/Homo_sapiens/protein/protein.fa.gz
+gunzip protein.fa.gz
+#wget ftp://ftp.ncbi.nih.gov/pub/CCDS/current_human/CCDS_protein_exons.current.faa.gz
+#gunzip CCDS_protein_exons.current.faa.gz
+mkdir blastDB && cd blastDB
+ln $genome_dir/BwaIndex/genome.fa .
+module load GNU/4.8.3
+module load BLAST+/2.3.0
+makeblastdb -in genome.fa -dbtype nucl
+cd ../
+$script_path/splitFasta.pl protein.fa 50
+for pep in subset[1-5][0-9]_protein.fa;do
+  label=${pep%_protein.fa}
+  bash $script_path/run_blast.sh "$pep" "$refPtn" $label."blastp.outfmt6" "$script_path/tblastn.sh"
+done
+bash $script_path/run_blast.sh "protein.fa" "$refRes/blastDB/genome.fa" "test.blastp.outfmt6" "$script_path/tblastn.sh"
+tblastn -query protein.fa -db $refRes/blastDB/genome.fa -max_target_seqs 1 -outfmt 6 -evalue 1e-5 -num_threads 1 > test.blastp.outfmt6
+
 
 #############################################################
 ## variant annotation
