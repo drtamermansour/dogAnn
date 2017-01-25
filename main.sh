@@ -24,7 +24,7 @@ $script_path/UCSC_kent_commands/bedToGenePred canis_familiaris.protein_coding.be
 #zcat $ucscTable | cut -f2-16 | $script_path/genePredToBed > refGene.bed
 
 ##refGenes from NCBI
-wget ftp://ftp.ncbi.nih.gov/genomes/Canis_lupus_familiaris/GFF/ref_CanFam3.1_top_level.gff3.gz
+wget ftp://ftp.ncbi.nih.gov/genomes/Canis_lupus_familiaris/GFF/ref_CanFam3.1_top_level.gff3.gz ## last modified at 9/18/15
 gunzip ref_CanFam3.1_top_level.gff3.gz
 #  recognize RefSeq transcript changed compared to genomic sequence
 #cat ref_CanFam3.1_top_level.gff3 | awk -F "\t" '$3=="mRNA"' | grep "Note=" > Note.gff3 ## the file has 1654 modified mRNA (they have a Note key)
@@ -43,7 +43,7 @@ grep -v "Curated Genomic" ref_CanFam3.1_top_level_edit.gff3 > ref_CanFam3.1_top_
 $script_path/UCSC_kent_commands/liftOver ref_CanFam3.1_top_level_edit2.gff3 $refRes/ncbi/NCBItoUCSC_map.sorted.chain ref_CanFam3.1_top_level_mapped.gff3 unMapped2 -gff
 
 ## ensembl gene track
-wget ftp://ftp.ensembl.org/pub/release-86/gtf/canis_familiaris/Canis_familiaris.CanFam3.1.86.gtf.gz
+wget ftp://ftp.ensembl.org/pub/release-86/gtf/canis_familiaris/Canis_familiaris.CanFam3.1.86.gtf.gz ## last modified at 9/13/16
 gunzip Canis_familiaris.CanFam3.1.86.gtf.gz
 
 ## human protein track from CanFam2
